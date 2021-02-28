@@ -4,14 +4,21 @@ pipeline{
         terraform 'terraform-14'
     }
     stages{
-        stage('Git Checkout'){
-            steps{
-                
-            }
-        }
         stage('Terraform Init'){
             steps{
                 sh 'terraform init'
+            }
+        }
+
+        stage('Terraform Plan'){
+            steps{
+                sh 'terraform plan -lock=false'
+            }
+        }
+
+        stage('Terraform Apply'){
+            steps{
+                sh 'terraform apply -lock=false'
             }
         }
     }
