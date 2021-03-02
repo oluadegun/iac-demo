@@ -20,7 +20,7 @@ EOF
 
 data "archive_file" "init" {
   type        = "zip"
-  source_file = "${path.module}/hello_world"
+  source_file = "${path.module}/hello_world/hello.py"
   output_path = "${path.module}/files/hello_world.zip"
 }
 
