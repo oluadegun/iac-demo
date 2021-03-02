@@ -18,7 +18,7 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
-variable "file_name" {
+variable "filename" {
     default = null
 }
 
