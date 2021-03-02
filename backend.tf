@@ -1,6 +1,9 @@
 provider "aws" {
   region = "eu-west-2"
+  access_key = TF_VAR_AWS_ACCESS_KEY_ID
+  secret_key = TF_VAR_AWS_SECRET_ACCESS_KEY
 }
+
 
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "tf-state-1993"

@@ -10,8 +10,8 @@ pipeline{
     environment {
         TF_WORKSPACE = 'default' //Sets the Terraform Workspace
         TF_IN_AUTOMATION = 'true'
-        AWS_ACCESS_KEY_ID = "${params.AWS_ACCESS_KEY_ID}"
-        AWS_SECRET_ACCESS_KEY = "${params.AWS_SECRET_ACCESS_KEY}"
+        TF_VAR_AWS_ACCESS_KEY_ID = "${params.AWS_ACCESS_KEY_ID}"
+        TF_VAR_AWS_SECRET_ACCESS_KEY = "${params.AWS_SECRET_ACCESS_KEY}"
     }
     stages{
         stage('Git Checkout'){
