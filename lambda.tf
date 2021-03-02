@@ -18,14 +18,12 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
-data "archive_file" "init" {
-  type        = "zip"
-  source_file = "${path.module}/hello_world/hello.py"
-  output_path = "${path.module}/files/hello_world.zip"
+variable "file_name" {
+    default = "${path.module}/files/hello_world.zip"
 }
 
 resource "aws_lambda_function" "test_lambda" {
-  filename      = "hello_world.zip"
+  filename      = var.file_name
   function_name = "trading_point_demo"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "lambda_function.lambda_handler"
@@ -33,7 +31,7 @@ resource "aws_lambda_function" "test_lambda" {
   # The filebase64sha256() function is available in Terraform 0.11.12 and later
   # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
-  source_code_hash = filebase64sha256("${path.module}/files/hello_world.zip")
+    #    source_code_hash = "${path.module}/files/hello_world.zip"
 
   runtime = "python3.7"
 
