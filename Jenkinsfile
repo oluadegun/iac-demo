@@ -30,8 +30,7 @@ pipeline{
         stage('Fetch Manifest files'){
             steps{
                 sh "aws s3 cp s3://tf-state-1993/${env.ENVIRONMENT_NAME}/manifest.yaml ./"
-                app_data = readYaml file: 'manifest.yml'
-                export TF_VAR_appname = app_data.appName
+                app_data=readYaml file: 'manifest.yaml'
             }
         }
         stage('Terraform Init'){
@@ -45,6 +44,7 @@ pipeline{
                     echo "${env.FILENAME}"
                     if [[ "" != "${env.FILENAME}" ]]; then
                         export  TF_VAR_filename="${env.FILENAME}"
+                        export TF_VAR_appname="${app_data.appName}"
                     fi
                     terraform plan -out=tfplan -input=false
                 """
@@ -56,6 +56,7 @@ pipeline{
                     echo "${env.FILENAME}"
                     if [[ "" != "${env.FILENAME}" ]]; then
                         export  TF_VAR_filename="${env.FILENAME}"
+                        export TF_VAR_appname="${app_data.appName}"
                     fi
                     terraform apply --auto-approve -lock=false tfplan
                 """
