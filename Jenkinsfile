@@ -1,7 +1,7 @@
 pipeline{
     agent any
     parameters {
-        string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
+        string(name: 'FILENAME', defaultValue: 'manifest.yaml', description: 'Manifest file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
     }
     stages{
@@ -16,7 +16,7 @@ pipeline{
             }
             steps{
                 sh """
-                aws s3 cp ./manifests/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/
+                aws s3 cp ./manifests/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/${env.ENVIRONMENT_NAME}
                 """
             }
         }
@@ -41,7 +41,7 @@ pipeline{
             }
             steps{
                 sh """
-                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/
+                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/${env.ENVIRONMENT_NAME}
                 """
             }
         }
