@@ -35,7 +35,7 @@ pipeline{
                 git branch: 'main', credentialsId: '07dad45e-ff36-442b-ba0b-f0927dbc2391', url: 'git@github.com:oluadegun/iac-demo'
             }
         } 
-        stage('Upload Deployment Artifact to s3'){
+        stage('Upload Application code to s3'){
             when {
                 expression { env.FILENAME != '' }
             }
