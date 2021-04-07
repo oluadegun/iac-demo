@@ -78,9 +78,9 @@ pipeline{
             }
         }
         stage('Fetch Manifest files'){
-            steps{
+            step{
                 sh "aws s3 cp s3://tf-state-1993/${env.ENVIRONMENT_NAME}/manifest.yaml ./"
-                app_data=readYaml file: 'manifest.yaml'
+                app_data = readYaml file: 'manifest.yaml'
             }
         }
         stage('Terraform Init'){
