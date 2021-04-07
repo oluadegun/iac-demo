@@ -16,7 +16,32 @@ pipeline{
             }
             steps{
                 sh """
-                aws s3 cp ./files/* s3://tf-state-1993/
+                aws s3 cp ./manifests/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/
+                """
+            }
+        }
+    }
+}
+
+pipeline{
+    agent any
+    parameters {
+        string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
+        string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
+    }
+    stages{
+        stage('Git Checkout'){
+            steps{
+                git branch: 'main', credentialsId: '07dad45e-ff36-442b-ba0b-f0927dbc2391', url: 'git@github.com:oluadegun/iac-demo'
+            }
+        } 
+        stage('Upload Deployment Artifact to s3'){
+            when {
+                expression { env.FILENAME != '' }
+            }
+            steps{
+                sh """
+                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/
                 """
             }
         }
@@ -70,6 +95,7 @@ pipeline{
                     if [[ "" != "${env.FILENAME}" ]]; then
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
+                        export TF_VAR_env="${env.ENVIRONMENT_NAME}"
                     fi
                     terraform plan -out=tfplan -input=false
                 """
