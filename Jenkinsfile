@@ -31,19 +31,29 @@ pipeline{
     agent any
     parameters {
         string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
-        string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
         string(name: 'APPVERSION', defaultValue: '', description: 'App version')
     }
     stages{
         stage('Promote to Dev'){
             steps{
-                sh "aws s3 cp s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}//manifest.yaml s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/"
+                sh "aws s3 cp s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/manifest.yaml s3://demo-deployment-files/deployments/${env.APPNAME}/dev/manifests/"
             }
         }
         stage('Deploy to Dev'){
             steps{
                 //invoke infra pipeline with env name=Dev and App name=Demo-app
                 build job: 'infra_pipeline', parameters: [string(name: 'ENVIRONMENT_NAME', value: 'dev'), string(name: 'APPNAME', value: 'demo_app')]
+            }
+        }
+        stage('Promote to Int'){
+            steps{
+                sh "aws s3 cp s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/manifest.yaml s3://demo-deployment-files/deployments/${env.APPNAME}/int/manifests/"
+            }
+        }
+        stage('Deploy to Int'){
+            steps{
+                //invoke infra pipeline with env name=Dev and App name=Demo-app
+                build job: 'infra_pipeline', parameters: [string(name: 'ENVIRONMENT_NAME', value: 'int'), string(name: 'APPNAME', value: 'demo_app')]
             }
         }
     }
@@ -96,7 +106,7 @@ pipeline{
                         export TF_VAR_appname="${app_data.appName}"
                         export TF_VAR_env_name="${env.ENVIRONMENT_NAME}"
                         export TF_VAR_appversion="${app_data.versionId}"
-                        export TF_VAR_lambda_pkg=artefacts/${app_data.appName}/${app_data.versionId}/${app_data.appName}-${app_data.versionId}.z
+                        export TF_VAR_lambda_pkg=artefacts/${app_data.appName}/${app_data.versionId}/${app_data.appName}-${app_data.versionId}.zip
                     fi
                     terraform plan -out=tfplan -input=false
                 """
