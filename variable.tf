@@ -4,3 +4,6 @@ variable "filename" {
 
 variable "lambda_pkg" {
 }
+
+variable "appname" {
+}
