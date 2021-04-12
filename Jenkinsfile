@@ -1,34 +1,7 @@
+///////Build Pipeline(software dep pipeline)///////
 pipeline{
     agent any
     parameters {
-        string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
-        string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
-        string(name: 'MANIFEST_FILE_NAME', defaultValue: 'manifest-v1.2.3.yaml', description: 'Manifest file name')
-    }
-    stages{
-        stage('Git Checkout'){
-            steps{
-                git branch: 'main', credentialsId: '07dad45e-ff36-442b-ba0b-f0927dbc2391', url: 'git@github.com:oluadegun/iac-demo'
-            }
-        } 
-        stage('Upload Deployment Artifact to s3'){
-            when {
-                expression { env.APPNAME != '' }
-            }
-            steps{
-                sh """
-                aws s3 cp ./manifests/${env.ENVIRONMENT_NAME}/* s3://demo-manifests/artefacts/${env.APPNAME}/version/
-                aws s3 cp s3://demo-manifests/artefacts/${env.APPNAME}/version/${env.MANIFEST_FILE_NAME} s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/
-                """
-            }
-        }
-    }
-}
-
-pipeline{
-    agent any
-    parameters {
-        string(name: 'FILENAME', defaultValue: 'hello-v.1.2.3.zip', description: 'Lambda file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
         string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
         string(name: 'APPVERSION', defaultValue: 'v1.2.3', description: 'App version')
@@ -36,32 +9,55 @@ pipeline{
     stages{
         stage('Git Checkout'){
             steps{
+                cleanWs()
                 git branch: 'main', credentialsId: '07dad45e-ff36-442b-ba0b-f0927dbc2391', url: 'git@github.com:oluadegun/iac-demo'
             }
         } 
-        stage('Upload Application code to s3'){
-            when {
-                expression { env.FILENAME != '' }
-            }
+        stage('Upload Application/manifests code to s3'){
             steps{
+                //Run Some steps that execute the build process before this upload and generate version number which would replace hard coded variable version number
                 sh """
-                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://demo-deployment-files/deployments/${env.APPNAME}/${env.APPVERSION}/
+                aws s3 cp ./files/* s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/
                 """
             }
         }
     }
 }
 
+////////promotion pipeline/////
+pipeline{
+    agent any
+    parameters {
+        string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
+        string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
+        string(name: 'APPVERSION', defaultValue: '', description: 'App version')
+    }
+    stages{
+        stage('Promote to Dev'){
+            steps{
+                sh "aws s3 cp s3://demo-manifests/artefacts/${env.APPNAME}/${env.APPVERSION}/manifest.yaml s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/"
+            }
+        }
+        stage('Deploy to Dev'){
+            steps{
+                //invoke infra pipeline with env name=Dev and App name=Demo-app
+                build job: 'infra_pipeline', parameters: [string(name: 'ENVIRONMENT_NAME', value: 'dev'), string(name: 'APPNAME', value: 'demo_app')]
+            }
+        }
+    }
+}
+
+
+/////////////Infra pipeline////////
 pipeline{
     agent any
     tools {
         terraform 'terraform-14'
     }
     parameters {
-        string(name: 'FILENAME', defaultValue: 'hello-v1.2.3.zip', description: 'Lambda file name')
+        string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
         string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
-        string(name: 'MANIFEST_FILE_NAME', defaultValue: 'manifest-v1.2.3.yaml', description: 'Manifest file name')
     }
     environment {
         TF_WORKSPACE = 'default' //Sets the Terraform Workspace
@@ -70,12 +66,13 @@ pipeline{
     stages{
         stage('Git Checkout'){
             steps{
+                cleanWs()
                 git branch: 'main', credentialsId: '07dad45e-ff36-442b-ba0b-f0927dbc2391', url: 'git@github.com:oluadegun/iac-demo'
             }
         } 
         stage('Fetching Manifest files'){
             steps{
-                sh "aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/${env.MANIFEST_FILE_NAME} ./"
+                sh "aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/manifest.yaml ./"
                 script {
                     app_data = readYaml file: 'manifest.yaml'
                     println app_data
