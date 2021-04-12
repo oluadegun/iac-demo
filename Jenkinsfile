@@ -17,8 +17,9 @@ pipeline{
             steps{
                 //Run Some steps that execute the build process before this upload and generate version number which would replace hard coded variable version number
                 sh """
-                aws s3 cp ./files/* s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/
-                aws s3 cp ./files/* s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/
+                for f in ./files/*; do
+                    aws s3 cp "\$f" s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/
+                done
                 """
             }
         }
@@ -56,7 +57,6 @@ pipeline{
         terraform 'terraform-14'
     }
     parameters {
-        string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
         string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
     }
@@ -78,16 +78,6 @@ pipeline{
                     app_data = readYaml file: 'manifest.yaml'
                     println app_data
                 }
-            }
-        }
-        stage('Fetching application from s3'){
-            when {
-                expression { env.FILENAME != '' }
-            }
-            steps{
-                sh """
-                aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${app_data.versionId}/${env.FILENAME} ./
-                """
             }
         }
         stage('Terraform Init'){
