@@ -96,7 +96,7 @@ pipeline{
                         export TF_VAR_appname="${app_data.appName}"
                         export TF_VAR_env_name="${env.ENVIRONMENT_NAME}"
                         export TF_VAR_appversion="${app_data.versionId}"
-                        export TF_VAR_lambda_pkg=artefacts/${app_data.appName}/${app_data.versionId}/${app_data.appName}-${app_data.versionId}.zip
+                        export TF_VAR_lambda_pkg=artefacts/${app_data.appName}/${app_data.versionId}/${app_data.appName}-${app_data.versionId}.z
                     fi
                     terraform plan -out=tfplan -input=false
                 """
