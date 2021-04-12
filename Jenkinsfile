@@ -94,7 +94,9 @@ pipeline{
         }
         stage('Terraform Init'){
             steps{
-                sh "terraform init"
+                sh """
+                    terraform init -backend-config="key=global/s3/${env.ENVIRONMENT_NAME}/terraform.tfstate"
+                """
             }
         }  
         stage('Terraform Plan') {
@@ -106,7 +108,7 @@ pipeline{
                         export TF_VAR_appname="${app_data.appName}"
                         export TF_VAR_env="${env.ENVIRONMENT_NAME}"
                         export TF_VAR_appversion="${app_data.versionId}"
-                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.versionId}/${env.FILENAME}-${app_data.versionId}.zip
+                        export TF_VAR_lambda_pkg=deployments/${app_data.appName}/${app_data.versionId}/${app_data.appName}-${app_data.versionId}.zip
                     fi
                     terraform plan -out=tfplan -input=false
                 """
@@ -114,16 +116,7 @@ pipeline{
         }
         stage('Terraform Apply'){
             steps{
-                sh """
-                    echo "${env.FILENAME}"
-                    if [[ "" != "${env.FILENAME}" ]]; then
-                        export  TF_VAR_filename="${env.FILENAME}"
-                        export TF_VAR_appname="${app_data.appName}"
-                        export TF_VAR_appversion="${app_data.version}"
-                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.versionId}/${env.FILENAME}-${app_data.versionId}.zip
-                    fi
-                    terraform apply --auto-approve -lock=false tfplan
-                """
+                sh "terraform apply --auto-approve -lock=false tfplan"
             }
         }
     }
