@@ -1,8 +1,9 @@
 pipeline{
     agent any
     parameters {
-        string(name: 'FILENAME', defaultValue: 'manifest.yaml', description: 'Manifest file name')
+        string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
+        string(name: 'MANIFEST_FILE_NAME', defaultValue: '', description: 'Manifest file name')
     }
     stages{
         stage('Git Checkout'){
@@ -12,11 +13,12 @@ pipeline{
         } 
         stage('Upload Deployment Artifact to s3'){
             when {
-                expression { env.FILENAME != '' }
+                expression { env.APPNAME != '' }
             }
             steps{
                 sh """
-                aws s3 cp ./manifests/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/${env.ENVIRONMENT_NAME}
+                aws s3 cp ./manifests/${env.ENVIRONMENT_NAME}/* s3://demo-manifests/artefacts/${env.APPNAME}/version/
+                aws s3 cp s3://demo-manifests/artefacts/${env.APPNAME}/version/${env.MANIFEST_FILE_NAME} s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests
                 """
             }
         }
@@ -28,6 +30,7 @@ pipeline{
     parameters {
         string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
+        string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
     }
     stages{
         stage('Git Checkout'){
@@ -41,7 +44,7 @@ pipeline{
             }
             steps{
                 sh """
-                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://tf-state-1993/${env.ENVIRONMENT_NAME}
+                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/applications/
                 """
             }
         }
@@ -56,6 +59,8 @@ pipeline{
     parameters {
         string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
+        string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
+        string(name: 'MANIFEST_FILE_NAME', defaultValue: '', description: 'Manifest file name')
     }
     environment {
         TF_WORKSPACE = 'default' //Sets the Terraform Workspace
@@ -67,20 +72,23 @@ pipeline{
                 git branch: 'main', credentialsId: '07dad45e-ff36-442b-ba0b-f0927dbc2391', url: 'git@github.com:oluadegun/iac-demo'
             }
         } 
-        stage('Fetch Deployment Artifact from s3'){
+        stage('Fetching Manifest files'){
+            steps{
+                sh "aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/${env.MANIFEST_FILE_NAME} ./"
+                script {
+                    def app_data = readYaml file: 'manifest.yaml'
+                    println app_data
+                }
+            }
+        }
+        stage('Fetching application from s3'){
             when {
                 expression { env.FILENAME != '' }
             }
             steps{
                 sh """
-                aws s3 cp s3://tf-state-1993/${env.FILENAME} ./
+                aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/applications/${env.FILENAME} ./
                 """
-            }
-        }
-        stage('Fetch Manifest files'){
-            step{
-                sh "aws s3 cp s3://tf-state-1993/${env.ENVIRONMENT_NAME}/manifest.yaml ./"
-                app_data = readYaml file: 'manifest.yaml'
             }
         }
         stage('Terraform Init'){
@@ -96,6 +104,7 @@ pipeline{
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
                         export TF_VAR_env="${env.ENVIRONMENT_NAME}"
+                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${env.ENVIRONMENT_NAME}/applications/${env.FILENAME}-${app_data.version}.zip
                     fi
                     terraform plan -out=tfplan -input=false
                 """
@@ -108,6 +117,7 @@ pipeline{
                     if [[ "" != "${env.FILENAME}" ]]; then
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
+                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${env.ENVIRONMENT_NAME}/applications/${env.FILENAME}-${app_data.version}.zip
                     fi
                     terraform apply --auto-approve -lock=false tfplan
                 """
