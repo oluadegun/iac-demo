@@ -18,13 +18,14 @@ pipeline{
                 //Run Some steps that execute the build process before this upload and generate version number which would replace hard coded variable version number
                 sh """
                 aws s3 cp ./files/* s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/
+                aws s3 cp ./files/* s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}/
                 """
             }
         }
     }
 }
 
-////////promotion pipeline/////
+////////promotion pipeline(artifacts_pipeline)/////
 pipeline{
     agent any
     parameters {
@@ -35,7 +36,7 @@ pipeline{
     stages{
         stage('Promote to Dev'){
             steps{
-                sh "aws s3 cp s3://demo-manifests/artefacts/${env.APPNAME}/${env.APPVERSION}/manifest.yaml s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/"
+                sh "aws s3 cp s3://demo-deployment-files/artefacts/${env.APPNAME}/${env.APPVERSION}//manifest.yaml s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/"
             }
         }
         stage('Deploy to Dev'){
