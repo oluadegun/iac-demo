@@ -1,5 +1,5 @@
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "demo_role_lambda"
+  name = "demo_role_lambda_${var.env_name}"
 
   assume_role_policy = <<EOF
 {
@@ -22,7 +22,7 @@ resource "aws_lambda_function" "test_lambda" {
   # filename      = var.filename == null ? "${path.module}/files/${env.TF_VAR_env}hello_world.zip" : var.filename
   s3_bucket     = "demo-deployment-files"
   s3_key        = "deployments/demo_app/${var.lambda_pkg}"
-  function_name = var.appname
+  function_name = "${var.appname}-${var.env_name}"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "lambda_function.lambda_handler"
 

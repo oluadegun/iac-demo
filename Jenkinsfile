@@ -94,7 +94,7 @@ pipeline{
                     if [[ "" != "${env.FILENAME}" ]]; then
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
-                        export TF_VAR_env="${env.ENVIRONMENT_NAME}"
+                        export TF_VAR_env_name="${env.ENVIRONMENT_NAME}"
                         export TF_VAR_appversion="${app_data.versionId}"
                         export TF_VAR_lambda_pkg=deployments/${app_data.appName}/${app_data.versionId}/${app_data.appName}-${app_data.versionId}.zip
                     fi
