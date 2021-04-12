@@ -77,7 +77,7 @@ pipeline{
             steps{
                 sh "aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/${env.MANIFEST_FILE_NAME} ./"
                 script {
-                    def app_data = readYaml file: 'manifest.yaml'
+                    app_data = readYaml file: 'manifest.yaml'
                     println app_data
                 }
             }
@@ -88,7 +88,7 @@ pipeline{
             }
             steps{
                 sh """
-                aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/applications/${env.FILENAME} ./
+                aws s3 cp s3://demo-deployment-files/deployments/${env.APPNAME}/${app_data.versionId}/${env.FILENAME} ./
                 """
             }
         }
@@ -105,8 +105,8 @@ pipeline{
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
                         export TF_VAR_env="${env.ENVIRONMENT_NAME}"
-                        export TF_VAR_appversion="${app_data.version}"
-                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.version}/${env.FILENAME}-${app_data.version}.zip
+                        export TF_VAR_appversion="${app_data.versionId}"
+                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.versionId}/${env.FILENAME}-${app_data.versionId}.zip
                     fi
                     terraform plan -out=tfplan -input=false
                 """
@@ -120,7 +120,7 @@ pipeline{
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
                         export TF_VAR_appversion="${app_data.version}"
-                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.version}/${env.FILENAME}-${app_data.version}.zip
+                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.versionId}/${env.FILENAME}-${app_data.versionId}.zip
                     fi
                     terraform apply --auto-approve -lock=false tfplan
                 """
