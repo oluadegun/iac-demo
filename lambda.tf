@@ -21,7 +21,7 @@ EOF
 resource "aws_lambda_function" "test_lambda" {
   # filename      = var.filename == null ? "${path.module}/files/${env.TF_VAR_env}hello_world.zip" : var.filename
   s3_bucket     = "demo-deployment-files"
-  s3_key        = "${var.lambda_pkg}"
+  s3_key        = var.lambda_pkg
   function_name = "${var.appname}-${var.env_name}"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "lambda_function.lambda_handler"
