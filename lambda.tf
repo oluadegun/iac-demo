@@ -23,7 +23,9 @@ variable "filename" {
 }
 
 resource "aws_lambda_function" "test_lambda" {
-  filename      = var.filename == null ? "${path.module}/files/${env.TF_VAR_env}hello_world.zip" : var.filename
+  # filename      = var.filename == null ? "${path.module}/files/${env.TF_VAR_env}hello_world.zip" : var.filename
+  s3_bucket     = "${env.TF_VAR_lambda_pkg}"
+  s3_object_version = "${env.TF_VAR_appversion}"
   function_name = "${env.TF_VAR_appname}"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "lambda_function.lambda_handler"

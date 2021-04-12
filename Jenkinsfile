@@ -3,7 +3,7 @@ pipeline{
     parameters {
         string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
-        string(name: 'MANIFEST_FILE_NAME', defaultValue: '', description: 'Manifest file name')
+        string(name: 'MANIFEST_FILE_NAME', defaultValue: 'manifest-v1.2.3.yaml', description: 'Manifest file name')
     }
     stages{
         stage('Git Checkout'){
@@ -18,7 +18,7 @@ pipeline{
             steps{
                 sh """
                 aws s3 cp ./manifests/${env.ENVIRONMENT_NAME}/* s3://demo-manifests/artefacts/${env.APPNAME}/version/
-                aws s3 cp s3://demo-manifests/artefacts/${env.APPNAME}/version/${env.MANIFEST_FILE_NAME} s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests
+                aws s3 cp s3://demo-manifests/artefacts/${env.APPNAME}/version/${env.MANIFEST_FILE_NAME} s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/manifests/
                 """
             }
         }
@@ -28,9 +28,10 @@ pipeline{
 pipeline{
     agent any
     parameters {
-        string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
+        string(name: 'FILENAME', defaultValue: 'hello-v.1.2.3.zip', description: 'Lambda file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
         string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
+        string(name: 'APPVERSION', defaultValue: 'v1.2.3', description: 'App version')
     }
     stages{
         stage('Git Checkout'){
@@ -44,7 +45,7 @@ pipeline{
             }
             steps{
                 sh """
-                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://demo-deployment-files/deployments/${env.APPNAME}/${env.ENVIRONMENT_NAME}/applications/
+                aws s3 cp ./files/${env.ENVIRONMENT_NAME}/* s3://demo-deployment-files/deployments/${env.APPNAME}/${env.APPVERSION}/
                 """
             }
         }
@@ -57,10 +58,10 @@ pipeline{
         terraform 'terraform-14'
     }
     parameters {
-        string(name: 'FILENAME', defaultValue: '', description: 'Lambda file name')
+        string(name: 'FILENAME', defaultValue: 'hello-v1.2.3.zip', description: 'Lambda file name')
         string(name: 'ENVIRONMENT_NAME', defaultValue: 'dev', description: 'AWS account')
         string(name: 'APPNAME', defaultValue: 'demo_app', description: 'App name')
-        string(name: 'MANIFEST_FILE_NAME', defaultValue: '', description: 'Manifest file name')
+        string(name: 'MANIFEST_FILE_NAME', defaultValue: 'manifest-v1.2.3.yaml', description: 'Manifest file name')
     }
     environment {
         TF_WORKSPACE = 'default' //Sets the Terraform Workspace
@@ -104,7 +105,8 @@ pipeline{
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
                         export TF_VAR_env="${env.ENVIRONMENT_NAME}"
-                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${env.ENVIRONMENT_NAME}/applications/${env.FILENAME}-${app_data.version}.zip
+                        export TF_VAR_appversion="${app_data.version}"
+                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.version}/${env.FILENAME}-${app_data.version}.zip
                     fi
                     terraform plan -out=tfplan -input=false
                 """
@@ -117,7 +119,8 @@ pipeline{
                     if [[ "" != "${env.FILENAME}" ]]; then
                         export  TF_VAR_filename="${env.FILENAME}"
                         export TF_VAR_appname="${app_data.appName}"
-                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${env.ENVIRONMENT_NAME}/applications/${env.FILENAME}-${app_data.version}.zip
+                        export TF_VAR_appversion="${app_data.version}"
+                        export TF_VAR_lambda_pkg=s3://demo-deployment-files/deployments/${app_data.appName}/${app_data.version}/${env.FILENAME}-${app_data.version}.zip
                     fi
                     terraform apply --auto-approve -lock=false tfplan
                 """
